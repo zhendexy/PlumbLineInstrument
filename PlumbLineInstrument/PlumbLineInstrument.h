@@ -25,6 +25,7 @@
 #include "camera.h"
 #include "cameraCali.h"
 #include "planeCali.h"
+#include "levelCali.h"
 
 
 
@@ -33,9 +34,9 @@
 #define IMAGE_HEIGHT ( 2048 )
 #define LABEL_WIDTH ( 400 )
 #define LABEL_HEIGHT ( 500 )
-#define LEFT_FOLDER "C:\\Users\\jzpwh\\Desktop\\xy\\calibrateExperiments\\11\\left\\"
-#define RIGHT_FOLDER "C:\\Users\\jzpwh\\Desktop\\xy\\calibrateExperiments\\11\\right\\"
-#define DATA_FOLDER "C:\\Users\\jzpwh\\Desktop\\xy\\calibrateExperiments\\11\\"
+#define LEFT_FOLDER "C:\\Users\\jzpwh\\Desktop\\xy\\calibrateExperiments\\18\\left\\"
+#define RIGHT_FOLDER "C:\\Users\\jzpwh\\Desktop\\xy\\calibrateExperiments\\18\\right\\"
+#define DATA_FOLDER "C:\\Users\\jzpwh\\Desktop\\xy\\calibrateExperiments\\18\\"
 
 
 using namespace std;
@@ -62,11 +63,14 @@ private slots:
 
 	void on_OpenCVCaliBtn_clicked();
 	void on_planeCaliBtn_clicked();
+	void on_levelCaliBtn_clicked();
 	void on_OpenCVParamsBtn_clicked();
 	void on_planeParamsBtn_clicked();
 
 	void on_startMeasureBtn_clicked();
 	void on_stopMeasureBtn_clicked();
+
+	void on_testBtn_clicked();
 
 
 public:
@@ -74,15 +78,24 @@ public:
 	Mat QImage2CvMat(const QImage &image);
 
 
-	Point3f uv2xwywzw(Point2f uvLeft, Point2f uvRight);
-	Point3f uv2xwywzw(Point uv, Mat& M);
-	void uv2xwywzw(Point &uv, Point3f &xwywzw, Mat& M);
-	Point3f uv2xcyczc(Point uv, Mat& M);
+	Point3f uv2xwywzw(Point2f& uvLeft, Point2f& uvRight);
+	Point3f uv2xwywzw(Point& uv, Mat& M);
+	void uv2xwywzw(Point& uv, Point3f& xwywzw, Mat& M);
+	Point3f uv2xcyczc(Point& uv, Mat& M);
 
 
 	bool findIntersection(Mat& frame, Point& intersection);
 	bool findIntersection(Mat& frame, Point& leftPoint, Point& rightPoint);
 
+	bool findBallCenter(Mat& frame, Point& ballCenter);
+	bool findTwoBallCenter(Mat& frame, Point& ball_1, Point& ball_2);
+
+	void measureOneBall(Mat& frame, Mat& result, Point3f& coordinate);
+	void measureTwoBalls(Mat& frame, Mat& result, Point3f& coord1, Point3f& coord2, float& d);
+
+	void test();
+
+	void calculateBallCoord(Point& Puv_ball, Point3f& Pc_laser, Point3f& Pc_ball);
 
 
 
@@ -156,6 +169,9 @@ public:
 	const char* laserPlaneCali_result_R = "laserPlaneParams_R.yml"; // 存放右相机激光平面的标定结果
 	Mat laserPlaneParams_L = Mat(3, 1, CV_32FC1); // 左右相机的平面标定参数 A B C
 	Mat laserPlaneParams_R = Mat(3, 1, CV_32FC1);
+
+
+	Mat levelPlaneParams = Mat(3, 1, CV_32FC1); // 左相机水平面标定参数 A B C
 
 
 };

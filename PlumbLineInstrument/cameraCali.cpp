@@ -21,7 +21,6 @@ bool CameraCali::singleCameraCalibrate(const char* imageFolder, const char* imag
 {
 	int n_boards = 0;
 	ifstream imageStore(data_folder + string(imageList)); // 打开存放标定图片名称的txt
-	FileStorage resultStore(data_folder + string(singleCalibrateResult), FileStorage::WRITE); // 保存标定结果的txt
 																							  // 开始提取角点坐标
 	vector<Point2f> corners; // 存放一张图片的角点坐标 
 	string imageName; // 读取的标定图片的名称
@@ -77,6 +76,7 @@ bool CameraCali::singleCameraCalibrate(const char* imageFolder, const char* imag
 	vector<Mat> tvec; // 平移向量
 	cv::calibrateCamera(objectPoints, corners_seq, imageSize, cameraMatrix, distCoeffs, rvec, tvec, 0);
 	// 保存标定结果
+	FileStorage resultStore(data_folder + string(singleCalibrateResult), FileStorage::WRITE); // 保存标定结果的tx
 	resultStore << "cameraMatrix" << cameraMatrix; // 相机内参数矩阵
 	resultStore << "distCoeffs" << distCoeffs; // 相机畸变系数
 											   // 保存第一张图片的相机外参

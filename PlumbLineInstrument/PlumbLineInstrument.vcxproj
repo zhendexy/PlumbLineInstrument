@@ -96,6 +96,7 @@
   <ItemGroup>
     <ClCompile Include="caliCalculate.cpp" />
     <ClCompile Include="imgProcess.cpp" />
+    <ClCompile Include="levelCali.cpp" />
     <ClCompile Include="planeCali.cpp" />
     <QtRcc Include="PlumbLineInstrument.qrc" />
     <QtUic Include="PlumbLineInstrument.ui" />
@@ -111,6 +112,7 @@
     <ClInclude Include="camera.h" />
     <ClInclude Include="cameraCali.h" />
     <ClInclude Include="imgProcess.h" />
+    <ClInclude Include="levelCali.h" />
     <ClInclude Include="planeCali.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

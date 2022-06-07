@@ -891,7 +891,7 @@ int ImgPro::findcrossdot2(Mat& mat, Mat& laser, vector<crossdot>& cdt)
 	Mat gray, edge, bin;
 	cvtColor(mat, gray, COLOR_BGR2GRAY);
 	blur(gray, gray, Size(5, 5));//中值滤波
-	threshold(gray, bin, 70, 255, THRESH_BINARY);
+	threshold(gray, bin, 40, 255, THRESH_BINARY);
 	imageName = string("./imgpro\\1二值化") + to_string(imgProcCount) + string(".jpg");
 	imwrite(imageName, bin);
 	veclaser = Extlaser3(mat, laser);

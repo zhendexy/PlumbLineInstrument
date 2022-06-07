@@ -150,14 +150,14 @@ void PlumbLineInstrument::readFrame()
 				Mat lMat(imageSize, CV_8UC1, alInputImage->GetDataPointer());
 				cvtColor(lMat, frameLeft, COLOR_RGB2BGR);
 				cv::rotate(frameLeft, frameLeft1, ROTATE_90_CLOCKWISE);
-				imwrite("frameLeft1.jpg", frameLeft1);
+				//imwrite("frameLeft1.jpg", frameLeft1);
 
 				PvImage *blInputImage = camera.blBuffer->GetImage();
 				blInputImage->Alloc(IMAGE_WIDTH, IMAGE_HEIGHT, PvPixelMono8);
 				Mat rMat(imageSize, CV_8UC1, blInputImage->GetDataPointer());
 				cvtColor(rMat, frameRight, COLOR_RGB2BGR);
 				cv::rotate(frameRight, frameRight1, ROTATE_90_CLOCKWISE);
-				imwrite("frameRight1.jpg", frameRight1);
+				//imwrite("frameRight1.jpg", frameRight1);
 
 				//string nameLeft, nameRight;
 				//if (num < 10)
@@ -175,75 +175,157 @@ void PlumbLineInstrument::readFrame()
 
 				++num;
 
-				cv::Point intersectionLeft, intersectionRight;
-				cv::Point intersectionRight_A, intersectionRight_B;
 
-				//remap(frameLeft, frameLeft, maplx, maply, INTER_LINEAR);
-				if (findIntersection(frameLeft1, intersectionLeft))
-				{
-					circle(frameLeft1, intersectionLeft, 3, Scalar(0, 0, 255), 3);
-					QImage lQimage = CvMat2QImage(frameLeft1);
-					QPixmap lQPixmap = QPixmap::fromImage(lQimage);
-					lQPixmap = lQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-					ui.labelLeft->setPixmap(lQPixmap);
 
-					//......
-				}
+				Mat resultLeft = frameLeft1.clone();
+				undistort(resultLeft, frameLeft1, cameraMatrix_L, distCoeffs_L); // 单目图像畸变矫正
+				resultLeft = frameLeft1.clone();
 
-				//remap(frameRight, frameRight, maprx, mapry, INTER_LINEAR);
-				Mat temp = frameRight1.clone();
-				undistort(temp, frameRight1, cameraMatrix_R, distCoeffs_R);
-				imwrite("temp111.jpg", frameRight1);
+				//Point3f P;
+				//measureOneBall(frameLeft1, resultLeft, P);
+				Point3f P1, P2;
+				float d;
+				measureTwoBalls(frameLeft1, resultLeft, P1, P2, d);
 
-				//找与垂线的交点
-				//if (findIntersection(frameRight1, intersectionRight))
+
+
+
+				//cv::Point intersectionLeft, intersectionRight;
+				//cv::Point ballCenterLeft, ballCenterRight;
+				//Point3f Pc_laser;
+				//Point3f Pc_ball;
+
+				////找与垂线的交点
+				//Mat templ = frameLeft1.clone();
+				//undistort(templ, frameLeft1, cameraMatrix_L, distCoeffs_L); // 单目图像畸变矫正
+				//templ = frameLeft1.clone();
+				//if (findIntersection(frameLeft1, intersectionLeft))
 				//{
-				//	circle(frameRight1, intersectionRight, 3, Scalar(0, 0, 255), 3);
+				//	circle(templ, intersectionLeft, 3, Scalar(0, 0, 255), 3);
+				//	QImage lQimage = CvMat2QImage(templ);
+				//	QPixmap lQPixmap = QPixmap::fromImage(lQimage);
+				//	lQPixmap = lQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				//	ui.labelLeft->setPixmap(lQPixmap);
+
+				//	Pc_laser = uv2xcyczc(intersectionLeft, cameraMatrix_L);
+				//	ui.label_u->setNum(intersectionLeft.x);
+				//	ui.label_v->setNum(intersectionLeft.y);
+				//	ui.label_xc->setNum(Pc_laser.x);
+				//	ui.label_yc->setNum(Pc_laser.y);
+				//	ui.label_zc->setNum(Pc_laser.z);
+
+				//	//Point3f Pw_laser = uv2xwywzw(intersectionRight, projectionMatrix_R);
+				//	//ui.label_xw->setNum(Pw_laser.x);
+				//	//ui.label_yw->setNum(Pw_laser.y);
+				//	//ui.label_zw->setNum(Pw_laser.z);
+
+				//	//Mat Pc(3, 1, CV_32FC1);
+				//	//Pc.at<float>(0) = Pc_laser.x;
+				//	//Pc.at<float>(1) = Pc_laser.y;
+				//	//Pc.at<float>(2) = Pc_laser.z;
+				//	//Mat R1_(3, 3, CV_32FC1);
+				//	//R1_ = rotationMatrix_R.inv();
+				//	//Mat Pw = R1_*(Pc - translationVector_R);
+				//	//ui.label_xw->setNum(Pw.at<float>(0));
+				//	//ui.label_yw->setNum(Pw.at<float>(1));
+				//	//ui.label_zw->setNum(Pw.at<float>(2));
+				//}
+
+				//if (findBallCenter(frameLeft1, ballCenterLeft))
+				//{
+				//	circle(templ, ballCenterLeft, 3, Scalar(0, 255, 0), 3);
+				//	QImage lQimage = CvMat2QImage(templ);
+				//	QPixmap lQPixmap = QPixmap::fromImage(lQimage);
+				//	lQPixmap = lQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				//	ui.labelLeft->setPixmap(lQPixmap);
+
+				//	float u = ballCenterLeft.x, v = ballCenterLeft.y;
+				//	float a = levelPlaneParams.at<float>(0, 0), b = levelPlaneParams.at<float>(1, 0), c = levelPlaneParams.at<float>(2, 0);
+				//	float x1 = Pc_laser.x, y1 = Pc_laser.y, z1 = Pc_laser.z;
+				//	float fx = cameraMatrix_L.at<double>(0, 0), fy = cameraMatrix_L.at<double>(1, 1);
+				//	float u0 = cameraMatrix_L.at<double>(0, 2), v0 = cameraMatrix_L.at<double>(1, 2);
+
+				//	Pc_ball.z = (c*fx*x1 - a*fx*z1) / (c*(u - u0) - a*fx);
+				//	Pc_ball.x = a*(Pc_ball.z - z1) / c + x1;
+				//	Pc_ball.y = b*(Pc_ball.z - z1) / c + y1;
+
+				//	ui.label_xw->setNum(Pc_ball.x);
+				//	ui.label_yw->setNum(Pc_ball.y);
+				//	ui.label_zw->setNum(Pc_ball.z);
+				//}
+
+				////找小球球心
+				//remap(frameLeft1, frameLeft1, mapl1, mapl2, INTER_LINEAR); // 双目图像立体校正
+				//remap(frameRight1, frameRight1, mapr1, mapr2, INTER_LINEAR); // 双目图像立体校正
+				//bool flag_ballCenterLeft;
+				//if (flag_ballCenterLeft = findBallCenter(frameLeft1, ballCenterLeft))
+				//{
+				//	circle(frameLeft1, ballCenterLeft, 2, Scalar(0, 255, 0), 2, 8, 0);
+				//	QImage lQimage = CvMat2QImage(frameLeft1);
+				//	QPixmap lQPixmap = QPixmap::fromImage(lQimage);
+				//	lQPixmap = lQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				//	ui.labelLeft->setPixmap(lQPixmap);
+
+				//}
+				//bool flag_ballCenterRight;
+				//if (flag_ballCenterRight = findBallCenter(frameRight1, ballCenterRight))
+				//{
+				//	circle(frameRight1, ballCenterRight, 2, Scalar(0, 255, 0), 2, 8, 0);
 				//	QImage rQimage = CvMat2QImage(frameRight1);
 				//	QPixmap rQPixmap = QPixmap::fromImage(rQimage);
 				//	rQPixmap = rQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 				//	ui.labelRight->setPixmap(rQPixmap);
 
-				//	ui.label_u->setNum(intersectionRight.x);
-				//	ui.label_v->setNum(intersectionRight.y);
-				//	//Point3f Pw2 = uv2xcyczc(intersectionRight, projectionMatrix_R);
-				//	//Mat convertMatrix = Mat(3, 4, CV_32FC1, Scalar::all(0));
-				//	//convertMatrix.at<float>(0, 0) = 1;
-				//	//convertMatrix.at<float>(1, 1) = 1;
-				//	//convertMatrix.at<float>(2, 2) = 1;
-				//	//Mat tempMatrix = cameraMatrix_R*convertMatrix;
-				//	Point3f Pw2 = uv2xwywzw(intersectionRight, cameraMatrix_R);
-				//	ui.label_xc->setNum(Pw2.x);
-				//	ui.label_yc->setNum(Pw2.y);
-				//	ui.label_zc->setNum(Pw2.z);
+				//}
+
+				////双目视觉求小球中心坐标
+				//if (flag_ballCenterLeft&&flag_ballCenterRight)
+				//{
+				//	Point3f Pw_ball = uv2xwywzw(ballCenterLeft, ballCenterRight);
+				//	ui.label_ul->setNum(ballCenterLeft.x);
+				//	ui.label_vl->setNum(ballCenterLeft.y);
+				//	ui.label_ur->setNum(ballCenterRight.x);
+				//	ui.label_vr->setNum(ballCenterRight.y);
+				//	ui.label_xw1->setNum(Pw_ball.x);
+				//	ui.label_yw1->setNum(Pw_ball.y);
+				//	ui.label_zw1->setNum(Pw_ball.z);
 				//}
 
 
+
+
+
+
+
+
+
+				//cv::Point intersectionRight_A, intersectionRight_B;
+
 				//找与圆锥的交线
-				if (findIntersection(frameRight1, intersectionRight_A, intersectionRight_B))
-				{
-					circle(frameRight1, intersectionRight_A, 3, Scalar(0, 0, 255), 3);
-					circle(frameRight1, intersectionRight_B, 3, Scalar(0, 0, 255), 3);
-					QImage rQimage = CvMat2QImage(frameRight1);
-					QPixmap rQPixmap = QPixmap::fromImage(rQimage);
-					rQPixmap = rQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-					ui.labelRight->setPixmap(rQPixmap);
+				//if (findIntersection(frameRight1, intersectionRight_A, intersectionRight_B))
+				//{
+				//	circle(frameRight1, intersectionRight_A, 3, Scalar(0, 0, 255), 3);
+				//	circle(frameRight1, intersectionRight_B, 3, Scalar(0, 0, 255), 3);
+				//	QImage rQimage = CvMat2QImage(frameRight1);
+				//	QPixmap rQPixmap = QPixmap::fromImage(rQimage);
+				//	rQPixmap = rQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				//	ui.labelRight->setPixmap(rQPixmap);
 
-					Point3f Pw_A = uv2xcyczc(intersectionRight_A, cameraMatrix_R);
-					Point3f Pw_B = uv2xcyczc(intersectionRight_B, cameraMatrix_R);
-					double L = sqrt((Pw_A.x - Pw_B.x)*(Pw_A.x - Pw_B.x) + (Pw_A.y - Pw_B.y)*(Pw_A.y - Pw_B.y) + (Pw_A.z - Pw_B.z)*(Pw_A.z - Pw_B.z));
-					double dy = (Pw_A.z + Pw_B.z) / 2 - y0;
-					L = L - 2 * dy*tan(theta)*tan(alpha);
-					
+				//	Point3f Pw_A = uv2xcyczc(intersectionRight_A, cameraMatrix_R);
+				//	Point3f Pw_B = uv2xcyczc(intersectionRight_B, cameraMatrix_R);
+				//	double L = sqrt((Pw_A.x - Pw_B.x)*(Pw_A.x - Pw_B.x) + (Pw_A.y - Pw_B.y)*(Pw_A.y - Pw_B.y) + (Pw_A.z - Pw_B.z)*(Pw_A.z - Pw_B.z));
+				//	double dy = (Pw_A.z + Pw_B.z) / 2 - y0;
+				//	L = L - 2 * dy*tan(theta)*tan(alpha);
+				//	
 
-					double h = 0.5 / tan(alpha)*L + tan(theta) / 2 * L - L0 / 2 * tan(theta);
-					double z = h - h0;
+				//	double h = 0.5 / tan(alpha)*L + tan(theta) / 2 * L - L0 / 2 * tan(theta);
+				//	double z = h - h0;
 
-					ui.label_L->setNum(L);
-					ui.label_h->setNum(h);
-					ui.label_yyy->setNum((Pw_A.z + Pw_B.z) / 2);
-					ui.label_zzz->setNum(z);
-				}
+				//	ui.label_L->setNum(L);
+				//	ui.label_h->setNum(h);
+				//	ui.label_yyy->setNum((Pw_A.z + Pw_B.z) / 2);
+				//	ui.label_zzz->setNum(z);
+				//}
 			}
 
 		}
@@ -277,13 +359,25 @@ void PlumbLineInstrument::on_OpenCVCaliBtn_clicked()
 void PlumbLineInstrument::on_planeCaliBtn_clicked()
 {
 	//planeCali.leftCali();
-	//planeCali.leftCali1();
-	//ui.textBrowser->append(QString::fromLocal8Bit("已完成左相机激光平面的标定!"));
-	//QCoreApplication::processEvents();
+	planeCali.leftCali1();
+	ui.textBrowser->append(QString::fromLocal8Bit("已完成左相机激光平面的标定!"));
+	QCoreApplication::processEvents();
 
 	//planeCali.rightCali();
-	planeCali.rightCali1();
-	ui.textBrowser->append(QString::fromLocal8Bit("已完成右相机激光平面的标定!"));
+	//planeCali.rightCali1();
+	//ui.textBrowser->append(QString::fromLocal8Bit("已完成右相机激光平面的标定!"));
+	//QCoreApplication::processEvents();
+}
+
+void PlumbLineInstrument::on_levelCaliBtn_clicked()
+{
+	string folder = DATA_FOLDER + string("levelCali\\");
+	LevelCali levelCali(DATA_FOLDER, folder.c_str(), cameraMatrix_L, distCoeffs_L);
+
+	levelCali.levelPlaneCali();
+	levelPlaneParams = levelCali.getLevelPlaneParams();
+
+	ui.textBrowser->append(QString::fromLocal8Bit("已完成左相机水平面的标定!"));
 	QCoreApplication::processEvents();
 }
 
@@ -334,13 +428,13 @@ void PlumbLineInstrument::on_OpenCVParamsBtn_clicked()
 	Rect validRoi[2];
 	//validRoi[0], validRoi[1] = stereoRectification(stereoRectifyParams, cameraMatrix_L, distCoeffs_L, cameraMatrix_R, distCoeffs_R,
 	//	imageSize, R, T, R1, R2, P1, P2, Q, mapl1, mapl2, mapr1, mapr2);
-	cv::stereoRectify(cameraMatrix_L, distCoeffs_L, cameraMatrix_R, distCoeffs_R, imageSize,
-		R, T, R1, R2, P1, P2, Q, 0, -1, imageSize, &validRoi[0], &validRoi[1]);
-	initUndistortRectifyMap(cameraMatrix_L, distCoeffs_L, R1, P1, imageSize, CV_32FC1, mapl1, mapl2);
-	initUndistortRectifyMap(cameraMatrix_R, distCoeffs_R, R2, P2, imageSize, CV_32FC1, mapr1, mapr2);
+	cv::stereoRectify(cameraMatrix_L, distCoeffs_L, cameraMatrix_R, distCoeffs_R, imageSize1,
+		R, T, R1, R2, P1, P2, Q, 0, -1, imageSize1, &validRoi[0], &validRoi[1]);
+	initUndistortRectifyMap(cameraMatrix_L, distCoeffs_L, R1, P1, imageSize1, CV_32FC1, mapl1, mapl2);
+	initUndistortRectifyMap(cameraMatrix_R, distCoeffs_R, R2, P2, imageSize1, CV_32FC1, mapr1, mapr2);
 
-	initUndistortRectifyMap(cameraMatrix_L, distCoeffs_L, Mat(), Mat(), imageSize, CV_32FC1, maplx, maply);
-	initUndistortRectifyMap(cameraMatrix_R, distCoeffs_R, Mat(), Mat(), imageSize, CV_32FC1, maprx, mapry);
+	initUndistortRectifyMap(cameraMatrix_L, distCoeffs_L, Mat(), Mat(), imageSize1, CV_32FC1, maplx, maply);
+	initUndistortRectifyMap(cameraMatrix_R, distCoeffs_R, Mat(), Mat(), imageSize1, CV_32FC1, maprx, mapry);
 
 
 	ui.textBrowser->append(QString::fromLocal8Bit("已读取OpenCV相机标定数据!"));
@@ -349,15 +443,22 @@ void PlumbLineInstrument::on_OpenCVParamsBtn_clicked()
 
 void PlumbLineInstrument::on_planeParamsBtn_clicked()
 {
-	FileStorage rayLineLStore(DATA_FOLDER + string(laserPlaneCali_result_L), FileStorage::READ);
-	rayLineLStore["laserPlaneParams"] >> laserPlaneParams_L;
-	rayLineLStore.release();
+	FileStorage laserPlaneLStore(DATA_FOLDER + string(laserPlaneCali_result_L), FileStorage::READ);
+	laserPlaneLStore["laserPlaneParams"] >> laserPlaneParams_L;
+	laserPlaneLStore.release();
 
-	FileStorage rayLineRStore(DATA_FOLDER + string(laserPlaneCali_result_R), FileStorage::READ);
-	rayLineRStore["laserPlaneParams"] >> laserPlaneParams_R;
-	rayLineRStore.release();
+	FileStorage laserPlaneRStore(DATA_FOLDER + string(laserPlaneCali_result_R), FileStorage::READ);
+	laserPlaneRStore["laserPlaneParams"] >> laserPlaneParams_R;
+	laserPlaneRStore.release();
 
 	ui.textBrowser->append(QString::fromLocal8Bit("已读取激光平面标定数据!"));
+	QCoreApplication::processEvents();
+
+
+	FileStorage levelPlaneStore(DATA_FOLDER + string("levelPlaneParams.yml"), FileStorage::READ);
+	levelPlaneStore["levelPlaneParams"] >> levelPlaneParams;
+	levelPlaneStore.release();
+	ui.textBrowser->append(QString::fromLocal8Bit("已读取水平面标定数据!"));
 	QCoreApplication::processEvents();
 }
 
@@ -387,6 +488,11 @@ void PlumbLineInstrument::on_stopMeasureBtn_clicked()
 	}
 }
 
+void PlumbLineInstrument::on_testBtn_clicked()
+{
+	test();
+}
+
 
 
 
@@ -399,9 +505,9 @@ uvRight	右相机图像坐标
 P1		左相机立体校正后的投影矩阵
 P2		右相机立体校正后的投影矩阵
 输出：
-Point3f	世界坐标	暂时不知道坐标系在哪
+Point3f	世界坐标	标定时第一张图片对应的世界坐标系
 */
-Point3f PlumbLineInstrument::uv2xwywzw(Point2f uvLeft, Point2f uvRight)
+Point3f PlumbLineInstrument::uv2xwywzw(Point2f& uvLeft, Point2f& uvRight)
 {
 	//     [u1]      [xw]                      [u2]      [xw]
 	//zc1 *|v1| = P1*[yw]                  zc2*|v2| = P2*[yw]
@@ -457,7 +563,7 @@ uv		图像坐标
 xwywzw	输出世界坐标
 M		相机投影矩阵
 */
-Point3f PlumbLineInstrument::uv2xwywzw(Point uv, Mat& M)
+Point3f PlumbLineInstrument::uv2xwywzw(Point& uv, Mat& M)
 {
 	//     [u]      [xw]
 	// zw *[v] = M *[yw]
@@ -525,7 +631,7 @@ Point3f PlumbLineInstrument::uv2xwywzw(Point uv, Mat& M)
 	return xwywzw;
 }
 
-void PlumbLineInstrument::uv2xwywzw(Point &uv, Point3f &xwywzw, Mat& M)
+void PlumbLineInstrument::uv2xwywzw(Point& uv, Point3f& xwywzw, Mat& M)
 {
 	//     [u]      [xw]
 	// zw *[v] = M *[yw]
@@ -590,10 +696,10 @@ void PlumbLineInstrument::uv2xwywzw(Point &uv, Point3f &xwywzw, Mat& M)
 	xwywzw.z = world.at<float>(2, 0);
 }
 
-Point3f PlumbLineInstrument::uv2xcyczc(Point uv, Mat& M)
+Point3f PlumbLineInstrument::uv2xcyczc(Point& uv, Mat& M)
 {
 	//     [u]      [xc]
-	// zw *[v] = M *[yc]
+	// zc *[v] = M *[yc]
 	//     [1]      [zc]
 	//              [ 1]
 	// a*xc + b*yc + c*zc + d = 0
@@ -607,9 +713,9 @@ Point3f PlumbLineInstrument::uv2xcyczc(Point uv, Mat& M)
 
 	float u = uv.x;
 	float v = uv.y;
-	float a = laserPlaneParams_R.at<float>(0, 0);
-	float b = laserPlaneParams_R.at<float>(1, 0);
-	float c = laserPlaneParams_R.at<float>(2, 0);
+	float a = laserPlaneParams_L.at<float>(0, 0);
+	float b = laserPlaneParams_L.at<float>(1, 0);
+	float c = laserPlaneParams_L.at<float>(2, 0);
 	float d = -1;
 	float m11 = M.at<double>(0, 0);
 	float m12 = M.at<double>(0, 1);
@@ -658,6 +764,59 @@ Point3f PlumbLineInstrument::uv2xcyczc(Point uv, Mat& M)
 	return xcyczc;
 }
 
+void PlumbLineInstrument::calculateBallCoord(Point& Puv_ball,Point3f& Pc_laser, Point3f& Pc_ball)
+{
+	//联立垂线方程和成像方程
+	//得到四个方程
+	//组合成矩阵，求最小二乘解
+
+	float m11 = cameraMatrix_L.at<double>(0, 0);
+	float m12 = cameraMatrix_L.at<double>(0, 1);
+	float m13 = cameraMatrix_L.at<double>(0, 2);
+	float m21 = cameraMatrix_L.at<double>(1, 0);
+	float m22 = cameraMatrix_L.at<double>(1, 1);
+	float m23 = cameraMatrix_L.at<double>(1, 2);
+	float m31 = cameraMatrix_L.at<double>(2, 0);
+	float m32 = cameraMatrix_L.at<double>(2, 1);
+	float m33 = cameraMatrix_L.at<double>(2, 2);
+	float a = levelPlaneParams.at<float>(0, 0);
+	float b = levelPlaneParams.at<float>(0, 1);
+	float c = levelPlaneParams.at<float>(0, 2);
+	float u = Puv_ball.x;
+	float v = Puv_ball.y;
+	float x1 = Pc_laser.x;
+	float y1 = Pc_laser.y;
+	float z1 = Pc_laser.z;
+
+
+	Mat A = Mat(4, 3, CV_32FC1);
+	A.at<float>(0, 0) = u*m31 - m11;
+	A.at<float>(0, 1) = u*m32 - m12;
+	A.at<float>(0, 2) = u*m33 - m13;
+	A.at<float>(1, 0) = v*m31 - m21;
+	A.at<float>(1, 1) = v*m32 - m22;
+	A.at<float>(1, 2) = v*m33 - m23;
+	A.at<float>(2, 0) = c;
+	A.at<float>(2, 1) = 0;
+	A.at<float>(2, 2) = -a;
+	A.at<float>(3, 0) = 0;
+	A.at<float>(3, 1) = c;
+	A.at<float>(3, 2) = -b;
+
+	Mat B = Mat(4, 1, CV_32FC1);
+	B.at<float>(0, 0) = 0;
+	B.at<float>(0, 1) = 0;
+	B.at<float>(0, 2) = c*x1 - a*z1;
+	B.at<float>(0, 3) = c*y1 - b*z1;
+
+	Mat XYZ = Mat(3, 1, CV_32FC1);
+	solve(A, B, XYZ, DECOMP_SVD);
+
+	Pc_ball.x = XYZ.at<float>(0, 0);
+	Pc_ball.y = XYZ.at<float>(0, 1);
+	Pc_ball.z = XYZ.at<float>(0, 2);
+}
+
 
 
 
@@ -665,15 +824,74 @@ Point3f PlumbLineInstrument::uv2xcyczc(Point uv, Mat& M)
 
 bool PlumbLineInstrument::findIntersection(Mat& frame, Point& intersection)
 {
+	//*******删除小球区域*******
+
+	Mat src;
+	cvtColor(frame, src, COLOR_BGR2GRAY);
 	Mat image;
 	cvtColor(frame, image, COLOR_BGR2GRAY);
-	threshold(image, image, 200, 255, THRESH_TOZERO); // 图像二值化
 
-	//找光斑点
+	//二值化
+	//过滤掉太暗太亮的区域
+	Mat pre = src.clone();
+	for (int v = 0; v < pre.rows; v++)
+		for (int u = 0; u < pre.cols; u++)
+		{
+			int val = pre.at<uchar>(v, u);
+			if (val < 50)
+				pre.at<uchar>(v, u) = 0;
+			else
+				pre.at<uchar>(v, u) = 255;
+		}
+	//imwrite("pre.jpg", pre);
+
+	//连续的腐蚀和膨胀
+	//使小球与背景和垂线分离开
+	Mat mid;
+	Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
+	morphologyEx(pre, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	//imwrite("mid.jpg", mid);
+
+	vector<vector<Point>> contours;
+	vector<Vec4i> hireachy;
+	findContours(mid, contours, hireachy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point());
+
+	for (size_t t = 0; t < contours.size(); t++)
+	{
+		if (contourArea(contours[t]) < 3000)
+			continue;
+
+		Rect rect = boundingRect(contours[t]);
+		float ratio = float(rect.width) / float(rect.height);
+		if (ratio < 1.1 && ratio > 0.9)
+		{
+			vector<Point> ppt = { Point(rect.x,rect.y),Point(rect.x + rect.width,rect.y),Point(rect.x + rect.width,rect.y + rect.height),Point(rect.x ,rect.y + rect.height) };
+			fillPoly(image, ppt, Scalar(0, 0, 0));
+
+			imwrite("image.jpg", image);
+		}
+	}
+
+
+	//*******找光斑点*******
+
 	//在直线下方一定距离设方框 求和
 	//包含光斑的框 求和值会更大 完全包含的最大
 	//框要确保能包含光斑
 	//找到之后求灰度质心
+	threshold(image, image, 200, 255, THRESH_TOZERO); // 图像二值化
+
 	int box_u0 = 0;				// 经验值，要自己设
 	int box_v0 = 0;				// 经验值，要自己设
 	int w = 100, h = 1280, step = 20; // 经验值，要自己设
@@ -783,4 +1001,308 @@ bool PlumbLineInstrument::findIntersection(Mat& frame, Point& leftPoint, Point& 
 		return false;
 
 	return true;
+}
+
+bool PlumbLineInstrument::findBallCenter(Mat& frame, Point& ballCenter)
+{
+	Mat src;
+	cvtColor(frame, src, COLOR_BGR2GRAY);
+
+	//二值化
+	//过滤掉太暗太亮的区域
+	Mat pre = src.clone();
+	for (int v = 0; v < pre.rows; v++)
+		for (int u = 0; u < pre.cols; u++)
+		{
+			int val = pre.at<uchar>(v, u);
+			if (val < 30 || val>200)
+				pre.at<uchar>(v, u) = 0;
+			else
+				pre.at<uchar>(v, u) = 255;
+		}
+	//imwrite("pre.jpg", pre);
+
+	//连续的腐蚀和膨胀
+	//使小球与背景和垂线分离开
+	Mat mid;
+	Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
+	morphologyEx(pre, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	//imwrite("mid.jpg", mid);
+
+	vector<vector<Point>> contours;
+	vector<Vec4i> hireachy;
+	findContours(mid, contours, hireachy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point());
+
+	Mat result = Mat::zeros(mid.size(), CV_8UC3);
+	for (size_t t = 0; t < contours.size(); t++)
+	{
+		if (contourArea(contours[t]) < 3000)
+			continue;
+
+		Rect rect = boundingRect(contours[t]);
+		float ratio = float(rect.width) / float(rect.height);
+		if (ratio < 1.2 && ratio > 0.8)
+		{
+			drawContours(result, contours, t, Scalar(0, 0, 255), -1, 8, Mat(), 0, Point());
+
+			Moments moment;//矩
+			Mat temp(contours[t]); // 当前轮廓
+			moment = moments(temp, false);
+			if (moment.m00 != 0) // 除数不能为0
+			{
+				ballCenter.x = cvRound(moment.m10 / moment.m00); // 计算重心横坐标
+				ballCenter.y = cvRound(moment.m01 / moment.m00); // 计算重心纵坐标
+			}
+			circle(result, ballCenter, 2, Scalar(0, 255, 0), 2, 8, 0);
+			//imwrite("result.jpg", result);
+
+			circle(src, ballCenter, 2, Scalar(0, 255, 0), 2, 8, 0);
+			//imwrite("result1.jpg", src);
+			break;
+		}
+	}
+
+
+	return true;
+}
+
+bool PlumbLineInstrument::findTwoBallCenter(Mat& frame, Point& ball_1, Point& ball_2)
+{
+	Mat src;
+	cvtColor(frame, src, COLOR_BGR2GRAY);
+
+	//二值化
+	//过滤掉太暗太亮的区域
+	Mat pre = src.clone();
+	for (int v = 0; v < pre.rows; v++)
+		for (int u = 0; u < pre.cols; u++)
+		{
+			int val = pre.at<uchar>(v, u);
+			if (val < 50 )
+				pre.at<uchar>(v, u) = 0;
+			else
+				pre.at<uchar>(v, u) = 255;
+		}
+	imwrite("pre.jpg", pre);
+
+	//连续的腐蚀和膨胀
+	//使小球与背景和垂线分离开
+	Mat mid;
+	Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
+	morphologyEx(pre, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_ERODE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	morphologyEx(mid, mid, MORPH_DILATE, element);
+	imwrite("mid.jpg", mid);
+
+	vector<vector<Point>> contours;
+	vector<Vec4i> hireachy;
+	findContours(mid, contours, hireachy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point());
+
+	Mat result = Mat::zeros(mid.size(), CV_8UC3);
+	int ball_number = 0;
+	for (size_t t = 0; t < contours.size(); t++)
+	{
+		if (contourArea(contours[t]) < 3000)
+			continue;
+
+		Rect rect = boundingRect(contours[t]);
+		float ratio = float(rect.width) / float(rect.height);
+		if (ratio < 1.1 && ratio > 0.9)
+		{
+			ball_number++;
+			drawContours(result, contours, t, Scalar(0, 0, 255), -1, 8, Mat(), 0, Point());
+
+			Point pt;
+			Moments moment;//矩
+			Mat temp(contours[t]); // 当前轮廓
+			moment = moments(temp, false);
+			if (moment.m00 != 0) // 除数不能为0
+			{
+				pt.x = cvRound(moment.m10 / moment.m00); // 计算重心横坐标
+				pt.y = cvRound(moment.m01 / moment.m00); // 计算重心纵坐标
+			}
+			circle(result, pt, 2, Scalar(0, 255, 0), 2, 8, 0);
+			imwrite("result.jpg", result);
+
+			circle(src, pt, 2, Scalar(0, 255, 0), 2, 8, 0);
+			imwrite("result1.jpg", src);
+
+			if (ball_number == 1)
+				ball_1 = pt;
+			if (ball_number == 2)
+			{
+				ball_2 = pt;
+				break;
+			}
+		}
+	}
+
+	//交换ball_1和ball_2，保证ball_1是上面的那个球
+	if (ball_1.y > ball_2.y)
+	{
+		Point temp = ball_1;
+		ball_1 = ball_2;
+		ball_2 = temp;
+	}
+
+
+	return true;
+}
+
+
+
+void PlumbLineInstrument::measureOneBall(Mat& frame, Mat& result, Point3f& coordinate)
+{
+	Point intersectionLeft;
+	Point ballCenterLeft;
+	Point3f Pc_laser;
+	Point3f Pc_ball;
+
+	if (findIntersection(frame, intersectionLeft))
+	{
+		circle(result, intersectionLeft, 3, Scalar(0, 0, 255), 3);
+		QImage lQimage = CvMat2QImage(result);
+		QPixmap lQPixmap = QPixmap::fromImage(lQimage);
+		lQPixmap = lQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+		ui.labelLeft->setPixmap(lQPixmap);
+
+		Pc_laser = uv2xcyczc(intersectionLeft, cameraMatrix_L);
+		ui.label_u->setNum(intersectionLeft.x);
+		ui.label_v->setNum(intersectionLeft.y);
+		ui.label_xc->setNum(Pc_laser.x);
+		ui.label_yc->setNum(Pc_laser.y);
+		ui.label_zc->setNum(Pc_laser.z);
+	}
+
+	if (findBallCenter(frame, ballCenterLeft))
+	{
+		circle(result, ballCenterLeft, 3, Scalar(0, 255, 0), 3);
+		QImage lQimage = CvMat2QImage(result);
+		QPixmap lQPixmap = QPixmap::fromImage(lQimage);
+		lQPixmap = lQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+		ui.labelLeft->setPixmap(lQPixmap);
+
+		//float u = ballCenterLeft.x, v = ballCenterLeft.y;
+		//float a = levelPlaneParams.at<float>(0, 0), b = levelPlaneParams.at<float>(1, 0), c = levelPlaneParams.at<float>(2, 0);
+		//float x1 = Pc_laser.x, y1 = Pc_laser.y, z1 = Pc_laser.z;
+		//float fx = cameraMatrix_L.at<double>(0, 0), fy = cameraMatrix_L.at<double>(1, 1);
+		//float u0 = cameraMatrix_L.at<double>(0, 2), v0 = cameraMatrix_L.at<double>(1, 2);
+
+		//Pc_ball.z = (c*fx*x1 - a*fx*z1) / (c*(u - u0) - a*fx);
+		//Pc_ball.x = a*(Pc_ball.z - z1) / c + x1;
+		//Pc_ball.y = b*(Pc_ball.z - z1) / c + y1;
+
+		calculateBallCoord(ballCenterLeft, Pc_laser, Pc_ball);
+
+		ui.label_xc1->setNum(Pc_ball.x);
+		ui.label_yc1->setNum(Pc_ball.y);
+		ui.label_zc1->setNum(Pc_ball.z);
+	}
+
+	coordinate = Pc_ball;
+}
+
+void PlumbLineInstrument::measureTwoBalls(Mat& frame, Mat& result, Point3f& coord1, Point3f& coord2, float& d)
+{
+	Point intersectionLeft;
+	Point ball_1, ball_2;
+	Point3f Pc_laser;
+	Point3f Pc_ball1, Pc_ball2;
+
+	if (findIntersection(frame, intersectionLeft))
+	{
+		circle(result, intersectionLeft, 3, Scalar(0, 255, 0), 3);
+		QImage lQimage = CvMat2QImage(result);
+		QPixmap lQPixmap = QPixmap::fromImage(lQimage);
+		lQPixmap = lQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+		ui.labelLeft->setPixmap(lQPixmap);
+
+		Pc_laser = uv2xcyczc(intersectionLeft, cameraMatrix_L);
+		ui.label_u->setNum(intersectionLeft.x);
+		ui.label_v->setNum(intersectionLeft.y);
+		ui.label_xc->setNum(Pc_laser.x);
+		ui.label_yc->setNum(Pc_laser.y);
+		ui.label_zc->setNum(Pc_laser.z);
+	}
+
+	if (findTwoBallCenter(frame, ball_1, ball_2))
+	{
+		circle(result, ball_1, 3, Scalar(0, 0, 255), 3);
+		circle(result, ball_2, 3, Scalar(0, 0, 255), 3);
+		QImage lQimage = CvMat2QImage(result);
+		QPixmap lQPixmap = QPixmap::fromImage(lQimage);
+		lQPixmap = lQPixmap.scaled(LABEL_WIDTH, LABEL_HEIGHT, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+		ui.labelLeft->setPixmap(lQPixmap);
+		ui.label_u1->setNum(ball_1.x);
+		ui.label_v1->setNum(ball_1.y);
+		ui.label_u2->setNum(ball_2.x);
+		ui.label_v2->setNum(ball_2.y);
+
+		//float a = levelPlaneParams.at<float>(0, 0), b = levelPlaneParams.at<float>(1, 0), c = levelPlaneParams.at<float>(2, 0);
+		//float x1 = Pc_laser.x, y1 = Pc_laser.y, z1 = Pc_laser.z;
+		//float fx = cameraMatrix_L.at<double>(0, 0), fy = cameraMatrix_L.at<double>(1, 1);
+		//float u0 = cameraMatrix_L.at<double>(0, 2), v0 = cameraMatrix_L.at<double>(1, 2);
+
+		//float u = ball_1.x, v = ball_1.y;
+		//Pc_ball1.z = (c*fx*x1 - a*fx*z1) / (c*(u - u0) - a*fx);
+		//Pc_ball1.x = a*(Pc_ball1.z - z1) / c + x1;
+		//Pc_ball1.y = b*(Pc_ball1.z - z1) / c + y1;
+
+		//u = ball_2.x;
+		//v = ball_2.y;
+		//Pc_ball2.z = (c*fx*x1 - a*fx*z1) / (c*(u - u0) - a*fx);
+		//Pc_ball2.x = a*(Pc_ball2.z - z1) / c + x1;
+		//Pc_ball2.y = b*(Pc_ball2.z - z1) / c + y1;
+
+		calculateBallCoord(ball_1, Pc_laser, Pc_ball1);
+		calculateBallCoord(ball_2, Pc_laser, Pc_ball2);
+
+
+		ui.label_xc1->setNum(Pc_ball1.x);
+		ui.label_yc1->setNum(Pc_ball1.y);
+		ui.label_zc1->setNum(Pc_ball1.z);
+		ui.label_xc2->setNum(Pc_ball2.x);
+		ui.label_yc2->setNum(Pc_ball2.y);
+		ui.label_zc2->setNum(Pc_ball2.z);
+	}
+
+	coord1 = Pc_ball1;
+	coord2 = Pc_ball2;
+	d = sqrt((coord1.x - coord2.x)*(coord1.x - coord2.x) + (coord1.y - coord2.y)*(coord1.y - coord2.y) + (coord1.z - coord2.z)*(coord1.z - coord2.z));
+
+	ui.label_d->setNum(d);
+}
+
+
+void PlumbLineInstrument::test()
+{
+	Mat frame = imread("test.jpg");
+	Mat result;
+	undistort(frame, result, cameraMatrix_L, distCoeffs_L); // 单目图像畸变矫正
+	frame = result.clone();
+
+	Point3f P1, P2;
+	float d;
+	measureTwoBalls(frame, result, P1, P2, d);
+
 }

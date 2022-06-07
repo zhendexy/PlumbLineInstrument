@@ -68,7 +68,7 @@ bool CaliCalculate::getR_T(vector<crossdot>cdt)
 	//cout << TransVec;
 	return IsGetRT;
 }
-//由光条像素坐标计算世界坐标系下的坐标（Xw,Yw,Zw=0）
+//由光条像素坐标计算世界坐标系下的坐标（Xw,Yw,Zw=0
 //输入参数为光条中心像素坐标，内参外参矩阵
 //第四个参数为输出的世界坐标（Xw,Yw）注意Zw=0
 void CaliCalculate::CalWorldPoint(vector<Point2d>point_uv, Mat IntrinsicM, Mat ExtriM3x4, vector<Point2d>&Point_XwYw)

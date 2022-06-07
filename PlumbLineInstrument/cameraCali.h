@@ -52,8 +52,8 @@ private:
 	Mat R, T, E, F; // 立体标定参数
 	Mat R1, R2, P1, P2, Q; // 立体校正参数
 	Mat mapl1, mapl2, mapr1, mapr2; // 图像重投影映射表	立体矫正校正
-	Size patternSize = Size(8, 6); // 行列内角点个数
-	Size chessboardSize = Size(7, 7); // 棋盘上每个棋盘格的大小10mm
+	Size patternSize = Size(8, 11); // 行列内角点个数
+	Size chessboardSize = Size(5, 5); // 棋盘上每个棋盘格的大小
 	Size imageSize = Size(image_width, image_height); // 图像尺寸
 	Rect validRoi[2];
 

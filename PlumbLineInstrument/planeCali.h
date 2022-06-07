@@ -72,9 +72,11 @@ private:
 	Mat projectionMatrix_R = Mat(3, 4, CV_32FC1, Scalar::all(0));
 
 
-	const char* laserCaliimageList_L = "laserCaliberationPics_L.txt"; // 左相机激光平面标定的图片名称列表
-	const char* laserCaliimageList_R = "laserCaliberationPics_R.txt"; // 右相机激光平面标定的图片名称列表
-	const char* laserImageLists_R = "laserImageLists_R.txt";
+	string left_or_right = "left\\";
+	const char* laserCaliImageList_L = "laserCaliImageList_L.txt"; // 左相机激光平面标定的图片名称列表
+	const char* laserCaliImageList_R = "laserCaliImageList_R.txt"; // 右相机激光平面标定的图片名称列表
+	const char* laserImageList_L = "laserImageList_L.txt";
+	const char* laserImageList_R = "laserImageList_R.txt";
 	const char* uvPoints_L = "uvPoints_L.txt"; // 存放图像上激光光条中心点数据
 	const char* uvPoints_R = "uvPoints_R.txt";
 	const char* realPoints_L = "realPoints_L.txt"; // 存放激光平面特征点数据
@@ -107,6 +109,8 @@ private:
 
 	bool laserPlaneCali(const char* imageFolder, const char* imageList, const char* laserList, const char* uvPoints, const char* realPoints, const char* caliPoints,
 		const char* caliErr, const char*rayPlaneCali_result, Mat& rayPlaneParams, Mat& projectionMatrix, Mat& cameraMatrix, Mat& distCoeffs);
+
+	void caliAccuracy();
 
 
 	void getRayLinePoints(Mat& srcImage, vector<Point>& linePoints);

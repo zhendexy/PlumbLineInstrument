@@ -110,8 +110,8 @@ bool PlaneCali::laserPlaneCali(const char* imageFolder, const char* imageList, c
 	Mat map1, map2;
 	initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), Mat(), imageSize, CV_32FC1, map1, map2);//计算无畸变和修正转换映射
 
-	ifstream imageStore(imageFolder + string(imageList)); // 打开存放标定图片名称的txt
-	ifstream laserStore(imageFolder + string(laserList));
+	ifstream imageStore(imageFolder + left_or_right + string(imageList)); // 打开存放标定图片名称的txt
+	ifstream laserStore(imageFolder + left_or_right + string(laserList));
 	string imageName, laserName;
 	vector<string> imageNames, laserNames;
 	vector<Mat> images, lasers;
@@ -122,17 +122,17 @@ bool PlaneCali::laserPlaneCali(const char* imageFolder, const char* imageList, c
 		imageNames.push_back(imageName);
 
 		Mat dst;
-		Mat image = imread(imageFolder + imageName);
+		Mat image = imread(imageFolder + left_or_right + imageName);
 		undistort(image, dst, cameraMatrix, distCoeffs);
 		//remap(image, dst, map1, map2, INTER_LINEAR);
 		images.push_back(dst.clone());
-		imwrite(imageFolder + string("rect_") + imageName, dst);
+		imwrite(imageFolder + string("rectified\\rect_") + imageName, dst);
 
-		Mat laser = imread(imageFolder + laserName);
+		Mat laser = imread(imageFolder + left_or_right + laserName);
 		undistort(laser, dst, cameraMatrix, distCoeffs);
 		//remap(laser, dst, map1, map2, INTER_LINEAR);
 		lasers.push_back(dst.clone());
-		imwrite(imageFolder + string("rect_") + laserName, dst);
+		imwrite(imageFolder + string("rectified\\rect_") + laserName, dst);
 
 		ImgNum++;
 	}
@@ -219,22 +219,35 @@ bool PlaneCali::laserPlaneCali(const char* imageFolder, const char* imageList, c
 	cin >> waitein;
 
 
-	
-	FileStorage laserParamsStore(data_folder + string(laserPlaneCali_result), FileStorage::WRITE);
-	int m = laserPt_C.size();
-	Mat L = Mat::ones(m, 1, CV_32FC1);
-	Mat realPointsMat = Mat(m, 3, CV_32FC1);
-	for (int i = 0; i < m; ++i)
+	if (laserPt_C.size() > 0)
 	{
-		realPointsMat.at<float>(i, 0) = laserPt_C[i].x;
-		realPointsMat.at<float>(i, 1) = laserPt_C[i].y;
-		realPointsMat.at<float>(i, 2) = laserPt_C[i].z;
-	}
-	solve(realPointsMat, L, laserPlaneParams, DECOMP_SVD);
-	laserParamsStore << "laserPlaneParams" << laserPlaneParams;
-	laserParamsStore.release();
+		FileStorage laserParamsStore(data_folder + string(laserPlaneCali_result), FileStorage::WRITE);
+		int m = laserPt_C.size();
+		Mat L = Mat::ones(m, 1, CV_32FC1);
+		Mat realPointsMat = Mat(m, 3, CV_32FC1);
+		for (int i = 0; i < m; ++i)
+		{
+			realPointsMat.at<float>(i, 0) = laserPt_C[i].x;
+			realPointsMat.at<float>(i, 1) = laserPt_C[i].y;
+			realPointsMat.at<float>(i, 2) = laserPt_C[i].z;
+		}
+		solve(realPointsMat, L, laserPlaneParams, DECOMP_SVD);
+		laserParamsStore << "laserPlaneParams" << laserPlaneParams;
+		laserParamsStore.release();
 
-	return true;
+		return true;
+	}
+
+	return false;
+}
+
+
+void PlaneCali::caliAccuracy()
+{
+
+
+
+
 }
 
 
@@ -751,13 +764,13 @@ void PlaneCali::uv2xwywzw(Point &uv, Point3f &xwywzw, Mat& M)
 //传统光栅尺方法标定
 void PlaneCali::leftCali()
 {
-	rayPlaneCalibrate(left_folder, laserCaliimageList_L, uvPoints_L, realPoints_L, caliPoints_L, caliErr_L, laserPlaneCali_result_L,
+	rayPlaneCalibrate(left_folder, laserCaliImageList_L, uvPoints_L, realPoints_L, caliPoints_L, caliErr_L, laserPlaneCali_result_L,
 		laserPlaneParams_L, projectionMatrix_L, cameraMatrix_L, distCoeffs_L);
 }
 
 void PlaneCali::rightCali()
 {
-	rayPlaneCalibrate(right_folder, laserCaliimageList_R, uvPoints_R, realPoints_R, caliPoints_R, caliErr_R, laserPlaneCali_result_R,
+	rayPlaneCalibrate(right_folder, laserCaliImageList_R, uvPoints_R, realPoints_R, caliPoints_R, caliErr_R, laserPlaneCali_result_R,
 		laserPlaneParams_R, projectionMatrix_R, cameraMatrix_R, distCoeffs_R);
 }
 
@@ -765,14 +778,16 @@ void PlaneCali::rightCali()
 //利用PnP任意姿态下的标定
 void PlaneCali::leftCali1()
 {
-
+	left_or_right = "left\\";
+	string folder = data_folder + string("laserCali\\");
+	laserPlaneCali(folder.c_str(), laserCaliImageList_L, laserImageList_L, uvPoints_L, realPoints_L, caliPoints_L, caliErr_L, laserPlaneCali_result_L,
+		laserPlaneParams_L, projectionMatrix_L, cameraMatrix_L, distCoeffs_L);
 }
 
 void PlaneCali::rightCali1()
 {
-	//const char* folder = (string(data_folder) + "laserCali\\").c_str();
-	//const char* folder = "C:\\Users\\jzpwh\\Documents\\Visual Studio 2015\\Projects\\PlumbLineInstrument\\PlumbLineInstrument\\";
-	string folder = data_folder + string("laserCali\\right\\");
-	laserPlaneCali(folder.c_str(), laserCaliimageList_R, laserImageLists_R, uvPoints_R, realPoints_R, caliPoints_R, caliErr_R, laserPlaneCali_result_R,
+	left_or_right = "right\\";
+	string folder = data_folder + string("laserCali\\");
+	laserPlaneCali(folder.c_str(), laserCaliImageList_R, laserImageList_R, uvPoints_R, realPoints_R, caliPoints_R, caliErr_R, laserPlaneCali_result_R,
 		laserPlaneParams_R, projectionMatrix_R, cameraMatrix_R, distCoeffs_R);
 }

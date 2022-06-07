@@ -1,4 +1,5 @@
-﻿  moc PlumbLineInstrument.h
+﻿  uic PlumbLineInstrument.ui
+   C:\Users\jzpwh\documents\visual studio 2015\Projects\PlumbLineInstrument\PlumbLineInstrument\PlumbLineInstrument.ui: Warning: The name 'layoutWidget' (QWidget) is already in use, defaulting to 'layoutWidget1'.
   PlumbLineInstrument.cpp
   main.cpp
   moc_PlumbLineInstrument.cpp
